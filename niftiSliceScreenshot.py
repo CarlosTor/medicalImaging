@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-i', '--input', help='Input image (required)', type=str, required = True)
     parser.add_argument('-sl', '--slice', help='Slice to be saved (required)', type=int, required = True)
-    parser.add_argument('-pl', '--plane', help='Plane to be saved (\'x\', \'y\' or \'z\') (required)', type=str, required = True)
+    parser.add_argument('-pl', '--plane', help='Plane to be saved (\'x\' (sagittal), \'y\' (coronal) or \'z\' (axial)) (required)', type=str, required = True)
     parser.add_argument('-o', '--output', help='Output screen shot (required)', type=str, default='', required = True)
     parser.add_argument('-f', '--format', help='Format image', type=str, default='png', required = False)
     parser.add_argument('-e', '--equal', help='Equal width and height', type=int, default=0, required = False)
