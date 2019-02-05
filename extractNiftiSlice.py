@@ -17,7 +17,6 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--padding', help='Padding to avoid in the image', type=int, default=0, required = False)
     parser.add_argument('-o', '--output', help='Prefix added to input name for output image (default \'_pl-\' + plane_name + \'-\' + slice_number)', type=str, default='', required = False)
 
-
     args = parser.parse_args()
     np.seterr(divide='ignore', invalid='ignore')
 
@@ -38,17 +37,17 @@ if __name__ == '__main__':
         print 'Plane parameter must be assign one of these value: \'x\' (sagittal), \'y\' (coronal) or \'z\' (axial)'
         sys.exit()
 
-    if (args.slice<0) | ((args.slice>=input.shape[0])&(args.plane=='x')) | ((args.slice>=input.shape[1])&(args.plane=='y')) | ((args.slice>=input.shape[2])&(args.plane=='z')):
+    if (args.slice<=0) | ((args.slice>input.shape[0])&(args.plane=='x')) | ((args.slice>input.shape[1])&(args.plane=='y')) | ((args.slice>input.shape[2])&(args.plane=='z')):
         print 'Slice is out of bound'
         sys.exit()
 
     try:
         if args.plane=='x':
-            slice = input[args.slice+1, args.padding:-args.padding, args.padding:-args.padding]
+            slice = input[args.slice-1, args.padding:input.shape[1]-args.padding, args.padding:input.shape[2]-args.padding]
         elif args.plane=='y':
-            slice = input[args.padding:-args.padding, args.slice+1, args.padding:-args.padding]
+            slice = input[args.padding:input.shape[0]-args.padding, args.slice-1, args.padding:input.shape[2]-args.padding]
         elif args.plane=='z':
-            slice = input[args.padding:-args.padding, args.padding:-args.padding, args.slice+1]
+            slice = input[args.padding:input.shape[0]-args.padding, args.padding:input.shape[1]-args.padding, args.slice-1]
     except:
         print 'Padding too large'
         sys.exit()
