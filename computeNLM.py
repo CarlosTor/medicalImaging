@@ -26,46 +26,61 @@ def computeSigmaNoise2D(img):
 @jit
 def computeNLM3DImageValue(data,hss,hps,h):
     padding3D=[(hps[0]+hss[0],hps[0]+hss[0]),(hps[1]+hss[1],hps[1]+hss[1]),(hps[2]+hss[2],hps[2]+hss[2])]
+    data=np.pad(data,padding3D,mode='constant',constant_values=0)
 
-    data=np.pad(data,padding3D,constant_values=0)
     result=np.zeros(data.shape)
-
     for x in xrange(hps[0]+hss[0],data.shape[0]-(hps[0]+hss[0])):
         for y in xrange(hps[1]+hss[1],data.shape[1]-(hps[1]+hss[1])):
             for z in xrange(hps[2]+hss[2],data.shape[2]-(hps[2]+hss[2])):
 
-                for ii in range(-hss[0],hss[0]+2):
-                    for jj in range(-hss[1],hss[1]+2):
-                        for kk in range(-hss[2],hss[2]+2):
+                sumW = np.float(0.0)
+                for ii in xrange(x-hss[0],x+hss[0]+2):
+                    for jj in xrange(y-hss[1],y+hss[1]+2):
+                        for kk in xrange(z-hss[2],z+hss[2]+2):
 
                             dist = np.float(0.0)
-                            for iii in range(-hps[0],hps[0]+1):
-                                for jjj in range(-hps[1],hps[1]+1):
-                                    for kkk in range(-hps[2],hps[2]+1):
-                                        dist += (data[x+iii,y+jjj,k+kkk]-data[ii+iii,jj+jjj,kk+kkk])**2
+                            if (ii!=0) | (jj!=0) | (kk!=0):
+                                for iii in xrange(-hps[0],hps[0]+2):
+                                    for jjj in xrange(-hps[1],hps[1]+2):
+                                        for kkk in xrange(-hps[2],hps[2]+2):
+
+                                            dist += (data[x+iii,y+jjj,z+kkk]-data[ii+iii,jj+jjj,kk+kkk])**2
+
                             result[x,y,z] += data[ii,jj,kk] * np.exp(-dist/h)
+                            sumW += np.exp(-dist/h)
+
+                result[x,y,z] /= sumW
+
     return result[hps[0]+hss[0]:-(hps[0]+hss[0]),hps[1]+hss[1]:-(hps[1]+hss[1]),hps[2]+hss[2]:-(hps[2]+hss[2])]
 
-#@jit
+
+@jit
 def computeNLM2DImageValue(data,hss,hps,h):
     padding2D=[(hps[0]+hss[0],hps[0]+hss[0]),(hps[1]+hss[1],hps[1]+hss[1])]
-
     data=np.pad(data,padding2D,mode='constant',constant_values=0)
 
+    eps = np.finfo(float).eps
     result=np.zeros(data.shape)
-
     for x in xrange(hps[0]+hss[0],data.shape[0]-(hps[0]+hss[0])):
         for y in xrange(hps[1]+hss[1],data.shape[1]-(hps[1]+hss[1])):
 
-            for ii in range(-hss[0],hss[0]+2):
-                for jj in range(-hss[1],hss[1]+2):
+            sumW = np.float(0.0)
+            for ii in xrange(x-hss[0],x+hss[0]+2):
+                for jj in xrange(y-hss[1],y+hss[1]+2):
 
                     dist = np.float(0.0)
-                    for iii in range(-hps[0],hps[0]+1):
-                        for jjj in range(-hps[1],hps[1]+1):
-                            dist += (data[x+iii,y+jjj]-data[ii+iii,jj+jjj])**2
+                    if (ii!=0) | (jj!=0):
+                        for iii in xrange(-hps[0],hps[0]+2):
+                            for jjj in xrange(-hps[1],hps[1]+2):
+
+                                dist += (data[x+iii,y+jjj]-data[ii+iii,jj+jjj])**2
+
                     result[x,y] += data[ii,jj] * np.exp(-dist/h)
-    return result[hps[0]+hss[0]:-(hps[0]+hss[0]),hps[1]+hss[1]:-(hps[1]+hss[1])]
+                    sumW += np.exp(-dist/h)
+
+            result[x,y] /= sumW+eps
+
+    return result[hps[0]+hss[0]:data.shape[0]-(hps[0]+hss[0]),hps[1]+hss[1]:data.shape[1]-(hps[1]+hss[1])]
 
 
 
@@ -90,22 +105,31 @@ if __name__ == '__main__':
 
 
   if isinstance(args.hss, int):
-      hss = args.hss*np.ones(len(input.shape)).astype(int)
+      hss = args.hss*np.ones(len(input.shape),dtype=int)
   elif len(args.hss) != len(input.shape):
-      hss = args.hss[0]*np.ones(len(input.shape)).astype(int)
+      hss = args.hss[0]*np.ones(len(input.shape),dtype=int)
   else:
       hss = args.hss
 
   if isinstance(args.hps, int):
-      hps = args.hps*np.ones(len(input.shape)).astype(int)
+      hps = args.hps*np.ones(len(input.shape),dtype=int)
   elif len(args.hps) != len(input.shape):
-      hps = args.hps[0]*np.ones(len(input.shape)).astype(int)
+      hps = args.hps[0]*np.ones(len(input.shape),dtype=int)
   else:
       hps = args.hps
 
 
 
-  try:
+
+
+
+  betah = 1.0
+  h = np.float(2.0 * betah * (computeSigmaNoise2D(input)) * np.float((2*hps[0]+1)*(2*hps[1]+1)) )
+  print 'h = '+str(h)
+  print 'hss = '+str(hss)
+  print 'hps = '+str(hps)
+  inputNLM = computeNLM2DImageValue(input,hss,hps,h)
+  '''try:
       if len(input.shape)==2:
           if args.hparameter < 0:
               betah = 1.0
@@ -123,11 +147,12 @@ if __name__ == '__main__':
   except:
       print 'Error when computing NLM algortihm'
       sys.exit()
+  '''
 
 
   try:
       if args.output=='':
-          splitInput=args.input[i].split('.')
+          splitInput=args.input.split('.')
           if splitInput[-1]=='nii':
               inputName='.'.join(splitInput[:-1])
           elif splitInput[-2]=='nii':
