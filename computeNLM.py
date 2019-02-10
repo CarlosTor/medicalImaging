@@ -121,15 +121,7 @@ if __name__ == '__main__':
 
 
 
-
-
-  betah = 1.0
-  h = np.float(2.0 * betah * (computeSigmaNoise2D(input)) * np.float((2*hps[0]+1)*(2*hps[1]+1)) )
-  print 'h = '+str(h)
-  print 'hss = '+str(hss)
-  print 'hps = '+str(hps)
-  inputNLM = computeNLM2DImageValue(input,hss,hps,h)
-  '''try:
+  try:
       if len(input.shape)==2:
           if args.hparameter < 0:
               betah = 1.0
@@ -147,7 +139,7 @@ if __name__ == '__main__':
   except:
       print 'Error when computing NLM algortihm'
       sys.exit()
-  '''
+
 
 
   try:
