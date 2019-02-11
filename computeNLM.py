@@ -34,15 +34,15 @@ def computeNLM3DImageValue(data,hss,hps,h):
             for z in xrange(hps[2]+hss[2],data.shape[2]-(hps[2]+hss[2])):
 
                 sumW = np.float(0.0)
-                for ii in xrange(x-hss[0],x+hss[0]+2):
-                    for jj in xrange(y-hss[1],y+hss[1]+2):
-                        for kk in xrange(z-hss[2],z+hss[2]+2):
+                for ii in xrange(x-hss[0],x+hss[0]+1):
+                    for jj in xrange(y-hss[1],y+hss[1]+1):
+                        for kk in xrange(z-hss[2],z+hss[2]+1):
 
                             dist = np.float(0.0)
                             if (ii!=0) | (jj!=0) | (kk!=0):
-                                for iii in xrange(-hps[0],hps[0]+2):
-                                    for jjj in xrange(-hps[1],hps[1]+2):
-                                        for kkk in xrange(-hps[2],hps[2]+2):
+                                for iii in xrange(-hps[0],hps[0]+1):
+                                    for jjj in xrange(-hps[1],hps[1]+1):
+                                        for kkk in xrange(-hps[2],hps[2]+1):
 
                                             dist += (data[x+iii,y+jjj,z+kkk]-data[ii+iii,jj+jjj,kk+kkk])**2
 
@@ -65,13 +65,13 @@ def computeNLM2DImageValue(data,hss,hps,h):
         for y in xrange(hps[1]+hss[1],data.shape[1]-(hps[1]+hss[1])):
 
             sumW = np.float(0.0)
-            for ii in xrange(x-hss[0],x+hss[0]+2):
-                for jj in xrange(y-hss[1],y+hss[1]+2):
+            for ii in xrange(x-hss[0],x+hss[0]+1):
+                for jj in xrange(y-hss[1],y+hss[1]+1):
 
                     dist = np.float(0.0)
                     if (ii!=0) | (jj!=0):
-                        for iii in xrange(-hps[0],hps[0]+2):
-                            for jjj in xrange(-hps[1],hps[1]+2):
+                        for iii in xrange(-hps[0],hps[0]+1):
+                            for jjj in xrange(-hps[1],hps[1]+1):
 
                                 dist += (data[x+iii,y+jjj]-data[ii+iii,jj+jjj])**2
 
@@ -117,7 +117,6 @@ if __name__ == '__main__':
       hps = args.hps[0]*np.ones(len(input.shape),dtype=int)
   else:
       hps = args.hps
-
 
 
 
