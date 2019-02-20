@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--normalise', help='Normalise the intensity levels', type=int, default=0, required = False)
     parser.add_argument('-c', '--contrast', help='Maximum intensity value for enhancing contrast', type=int, default=0, required = False)
     parser.add_argument('-fd', '--fourthDimension', help='Value of the 4th dimension, in case of 4D input image', type=int, default=0, required = False)
-    parser.add_argument('-p', '--padding', help='Padding to avoid in the image', type=int, default=0, required = False)
+    parser.add_argument('-p', '--padding', help='Padding to avoid in the image', type=int, nargs='*' ,default=0, required = False)
     parser.add_argument('-cb', '--colorbar', help='Active the colorbar', type=int, default=0, required = False)
     parser.add_argument('-cm', '--cmap', help='Color map of the screenshot (\'grey\' or \'color\)', type=str, default='gray', required = False)
 
@@ -40,21 +40,32 @@ if __name__ == '__main__':
 
 
 
-    inputImage=nibabel.load(args.input)
-
-
+    inputImage = nibabel.load(args.input)
     tmp=inputImage.get_data()
+    if isinstance(args.padding, int):
+        padding = padding*np.ones(2*len(inputImage.get_data().shape))
+    elif len(args.padding)==len(inputImage.get_data().shape):
+        list = range(len(inputImage.get_data().shape))+range(len(inputImage.get_data().shape))
+        list.sort()
+        padding = np.array([args.padding[i] for i in list])
+    else:
+        padding = args.padding
+
+    if len(padding)!=2*len(inputImage.get_data().shape):
+        print 'Length of padding array must be equal to the input dimension x2'
+        sys.exit()
+
     if (len(tmp.shape)==2):
         pixdim=inputImage.header['pixdim'][1:3]
-        tmp=inputImage.get_data()[args.padding:tmp.shape[0]-args.padding, args.padding:tmp.shape[1]-args.padding]
+        tmp=inputImage.get_data()[padding[0]:tmp.shape[0]-padding[1], padding[2]:tmp.shape[1]-padding[3]]
     elif ((len(tmp.shape)>2) & (tmp.shape[2]==1)):
-        tmp=inputImage.get_data()[args.padding:tmp.shape[0]-args.padding, args.padding:tmp.shape[1]-args.padding,0]
+        tmp=inputImage.get_data()[padding[0]:tmp.shape[0]-padding[1], padding[2]:tmp.shape[1]-padding[3],0]
         pixdim=inputImage.header['pixdim'][1:3]
     else:
         if len(tmp.shape)==4:
-            tmp=inputImage.get_data()[args.padding:tmp.shape[0]-args.padding, args.padding:tmp.shape[1]-args.padding, args.padding:tmp.shape[2]-args.padding, args.fourthDimension]
+            tmp=inputImage.get_data()[padding[0]:tmp.shape[0]-padding[1], padding[2]:tmp.shape[1]-padding[3], padding[4]:tmp.shape[2]-padding[5], args.fourthDimension]
         else:
-            tmp=inputImage.get_data()[args.padding:tmp.shape[0]-args.padding, args.padding:tmp.shape[1]-args.padding, args.padding:tmp.shape[2]-args.padding]
+            tmp=inputImage.get_data()[padding[0]:tmp.shape[0]-padding[1], padding[2]:tmp.shape[1]-padding[3], padding[4]:tmp.shape[2]-padding[5]]
 
         if args.plane=='x':
             tmp=ndimage.rotate(np.transpose(tmp[args.slice,:,:]),90)
