@@ -43,7 +43,7 @@ if __name__ == '__main__':
     inputImage = nibabel.load(args.input)
     tmp=inputImage.get_data()
     if isinstance(args.padding, int):
-        padding = padding*np.ones(2*len(inputImage.get_data().shape))
+        padding = args.padding*np.ones(2*len(inputImage.get_data().shape),dtype='int')
     elif len(args.padding)==len(inputImage.get_data().shape):
         list = range(len(inputImage.get_data().shape))+range(len(inputImage.get_data().shape))
         list.sort()
