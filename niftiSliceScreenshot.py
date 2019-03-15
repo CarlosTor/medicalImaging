@@ -32,6 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--padding', help='Padding to avoid in the image', type=int, nargs='*' ,default=0, required = False)
     parser.add_argument('-cb', '--colorbar', help='Active the colorbar', type=int, default=0, required = False)
     parser.add_argument('-cm', '--cmap', help='Color map of the screenshot (\'grey\' or \'color\)', type=str, default='gray', required = False)
+    parser.add_argument('-seg', '--segmentation', help='Segmentation image', type=str, nargs='*', default='', required = False)
 
 
 
@@ -83,6 +84,62 @@ if __name__ == '__main__':
         tmp/=np.max(tmp)
 
     w,h=tmp.shape[0]*pixdim[0]/(pixdim[0]*6),tmp.shape[1]*pixdim[1]/(pixdim[0]*6)
+
+
+
+    if args.segmentation!='':
+        if isinstance(args.segmentation, list):
+            tmp = tmp/np.max(tmp)
+            RGB = np.zeros((tmp.shape[0],tmp.shape[1],3))
+            RGB[:,:,1]=tmp
+            RGB[:,:,2]=tmp
+            tmpmask = tmp.copy()
+
+            for i,seg in enumerate(args.segmentation):
+                mask = nibabel.load(seg).get_data()
+                if len(mask.shape)==4:
+                    mask = nibabel.load(seg).get_data()[:,:,:,args.fourthDimension]
+
+                if args.plane=='x':
+                    mask=ndimage.rotate(np.transpose(mask[args.slice,padding[2]:mask.shape[1]-padding[3],padding[4]:mask.shape[2]-padding[5]]),90)
+                elif args.plane=='y':
+                    mask=mask[padding[0]:mask.shape[0]-padding[1],args.slice,padding[4]:mask.shape[2]-padding[5]]
+                elif args.plane=='z':
+                    mask=mask[padding[0]:mask.shape[0]-padding[1],padding[2]:mask.shape[1]-padding[3],args.slice]
+
+                tmpmask[mask==1] = 1.
+                RGB[mask==1,1] = 0.
+                RGB[mask==1,2] = 0.
+                RGB[:,:,0]=tmpmask
+
+        else:
+            mask = nibabel.load(args.segmentation).get_data()
+            tmp = tmp/np.max(tmp)
+            tmpmask = tmp.copy()
+            tmpmask[mask==1] = 1.
+            RGB = np.zeros((tmp.shape[0],tmp.shape[1],3))
+            RGB[:,:,1]=tmp
+            RGB[:,:,2]=tmp
+            tmpmask = tmp.copy()
+
+            if len(mask.shape)==4:
+                mask = mask[:,:,:,args.fourthDimension]
+
+            if args.plane=='x':
+                mask=ndimage.rotate(np.transpose(mask[args.slice,padding[2]:mask.shape[1]-padding[3],padding[4]:mask.shape[2]-padding[5]]),90)
+            elif args.plane=='y':
+                mask=mask[padding[0]:mask.shape[0]-padding[1],args.slice,padding[4]:mask.shape[2]-padding[5]]
+            elif args.plane=='z':
+                mask=mask[padding[0]:mask.shape[0]-padding[1],padding[2]:mask.shape[1]-padding[3],args.slice]
+
+            tmpmask[mask==1] = 1.
+            RGB[mask==1,1] = 0.
+            RGB[mask==1,2] = 0.
+            RGB[:,:,0]=tmpmask
+
+        tmp = RGB
+
+
 
     fig=plt.figure(frameon=False)
     fig.set_size_inches(w,h)
