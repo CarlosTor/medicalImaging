@@ -83,7 +83,11 @@ if __name__ == '__main__':
     if args.normalise==1:
         tmp/=np.max(tmp)
 
-    w,h=tmp.shape[0]*pixdim[0]/(pixdim[0]*6),tmp.shape[1]*pixdim[1]/(pixdim[0]*6)
+
+    if args.colorbar==1:
+        w,h=tmp.shape[0]*pixdim[0]/(pixdim[0]*6)+10,tmp.shape[1]*pixdim[1]/(pixdim[0]*6)
+    else:
+        w,h=tmp.shape[0]*pixdim[0]/(pixdim[0]*6),tmp.shape[1]*pixdim[1]/(pixdim[0]*6)
 
 
 
@@ -142,10 +146,6 @@ if __name__ == '__main__':
 
 
     fig=plt.figure(frameon=False)
-    if args.colorbar==1:
-        cbar=fig.colorbar(im, extend='both')#, shrink=0.9)#, ax=ax)
-        cbar.ax.tick_params(labelsize=100)
-        w,h=tmp.shape[0]*pixdim[0]/(pixdim[0]*6)+10,tmp.shape[1]*pixdim[1]/(pixdim[0]*6)
     fig.set_size_inches(w,h)
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     ax.set_axis_off()
@@ -163,5 +163,7 @@ if __name__ == '__main__':
     if args.equal==2:
         forceAspect(ax,aspect=1)
 
-
+    if args.colorbar==1:
+        cbar=fig.colorbar(im, extend='both')#, shrink=0.9)#, ax=ax)
+        cbar.ax.tick_params(labelsize=100)
     plt.savefig(args.output+'_'+args.plane+str(args.slice)+'.'+args.format)
