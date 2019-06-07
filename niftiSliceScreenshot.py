@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os,sys
-from time import time
 import argparse
 import numpy as np
 import nibabel
@@ -30,9 +29,10 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--contrast', help='Maximum intensity value for enhancing contrast', type=int, default=0, required = False)
     parser.add_argument('-fd', '--fourthDimension', help='Value of the 4th dimension, in case of 4D input image', type=int, default=0, required = False)
     parser.add_argument('-p', '--padding', help='Padding to avoid in the image', type=int, nargs='*' ,default=0, required = False)
-    parser.add_argument('-cb', '--colorbar', help='Active the colorbar', type=int, default=0, required = False)
-    parser.add_argument('-cm', '--cmap', help='Color map of the screenshot (\'grey\' or \'color\)', type=str, default='gray', required = False)
+    parser.add_argument('-cb', '--colorbar', help='Active the colorbar with a positive integer different than 0', type=int, default=0, required = False)
+    parser.add_argument('-cm', '--cmap', help='Color map of the screenshot (\'gray\' or \'color\)', type=str, default='gray', required = False)
     parser.add_argument('-seg', '--segmentation', help='Segmentation image', type=str, nargs='*', default='', required = False)
+    parser.add_argument('-cr', '--crop', help='Coordinates of the image in order to crop (e.g. x0, y0, x1, y1, or x0 x1 z0 z1)', type=int, nargs='*', default=[0,0,0,0], required = False)
 
 
 
@@ -40,8 +40,21 @@ if __name__ == '__main__':
     np.seterr(divide='ignore', invalid='ignore')
 
 
-
     inputImage = nibabel.load(args.input)
+
+    if np.sum(args.crop)==0:
+        if (args.plane=='z') | (inputImage.shape==2):
+            crop = [0,0,inputImage.shape[0],inputImage.shape[1]]
+        if (args.plane=='x'):
+            crop = [0,0,inputImage.shape[1],inputImage.shape[2]]
+        if (args.plane=='y'):
+            crop = [0,0,inputImage.shape[0],inputImage.shape[2]]
+    elif len(args.crop)==4:
+        crop = args.crop
+    else:
+        print 'Crop coordinates must be sized 4 (2D) or 6 (3D)'
+        sys.exit()
+
     tmp=inputImage.get_data()
     if isinstance(args.padding, int):
         padding = args.padding*np.ones(2*len(inputImage.get_data().shape),dtype='int')
@@ -58,9 +71,9 @@ if __name__ == '__main__':
 
     if (len(tmp.shape)==2):
         pixdim=inputImage.header['pixdim'][1:3]
-        tmp=inputImage.get_data()[padding[0]:tmp.shape[0]-padding[1], padding[2]:tmp.shape[1]-padding[3]]
+        tmp=inputImage.get_data()[crop[0]+padding[0]:crop[2]-padding[1], crop[1]+padding[2]:crop[3]-padding[3]]
     elif ((len(tmp.shape)>2) & (tmp.shape[2]==1)):
-        tmp=inputImage.get_data()[padding[0]:tmp.shape[0]-padding[1], padding[2]:tmp.shape[1]-padding[3],0]
+        tmp=inputImage.get_data()[crop[0]+padding[0]:crop[2]-padding[1], crop[1]+padding[2]:crop[3]-padding[3],0]
         pixdim=inputImage.header['pixdim'][1:3]
     else:
         if len(tmp.shape)==4:
@@ -69,22 +82,21 @@ if __name__ == '__main__':
             tmp=inputImage.get_data()[padding[0]:tmp.shape[0]-padding[1], padding[2]:tmp.shape[1]-padding[3], padding[4]:tmp.shape[2]-padding[5]]
 
         if args.plane=='x':
-            tmp=ndimage.rotate(np.transpose(tmp[args.slice,:,:]),90)
+            tmp=ndimage.rotate(np.transpose(tmp[args.slice,crop[0]:crop[2],crop[1]:crop[3]]),90)
             pixdim=inputImage.header['pixdim'][2:4]
         elif args.plane=='y':
-            tmp=tmp[:,args.slice,:]
+            tmp=tmp[crop[0]:crop[2],args.slice,crop[1]:crop[3]]
             pixdim=[inputImage.header['pixdim'][1],inputImage.header['pixdim'][3]]
         elif args.plane=='z':
-            tmp=tmp[:,:,args.slice]
+            tmp=tmp[crop[0]:crop[2],crop[1]:crop[3],args.slice]
             pixdim=inputImage.header['pixdim'][1:3]
-
 
 
     if args.normalise==1:
         tmp/=np.max(tmp)
 
 
-    if args.colorbar==1:
+    if args.colorbar!=0:
         w,h=tmp.shape[0]*pixdim[0]/(pixdim[0]*6)+10,tmp.shape[1]*pixdim[1]/(pixdim[0]*6)
     else:
         w,h=tmp.shape[0]*pixdim[0]/(pixdim[0]*6),tmp.shape[1]*pixdim[1]/(pixdim[0]*6)
@@ -105,11 +117,11 @@ if __name__ == '__main__':
                     mask = nibabel.load(seg).get_data()[:,:,:,args.fourthDimension]
 
                 if args.plane=='x':
-                    mask=ndimage.rotate(np.transpose(mask[args.slice,padding[2]:mask.shape[1]-padding[3],padding[4]:mask.shape[2]-padding[5]]),90)
+                    mask=ndimage.rotate(np.transpose(mask[args.slice,crop[0]+padding[2]:crop[2]-padding[3],crop[1]+padding[4]:crop[3]-padding[5]]),90)
                 elif args.plane=='y':
-                    mask=mask[padding[0]:mask.shape[0]-padding[1],args.slice,padding[4]:mask.shape[2]-padding[5]]
+                    mask=mask[crop[0]+padding[0]:crop[2]-padding[1],args.slice,crop[1]+padding[4]:crop[3]-padding[5]]
                 elif args.plane=='z':
-                    mask=mask[padding[0]:mask.shape[0]-padding[1],padding[2]:mask.shape[1]-padding[3],args.slice]
+                    mask=mask[crop[0]+padding[0]:crop[2]-padding[1],crop[1]+padding[2]:crop[3]-padding[3],args.slice]
 
                 tmpmask[mask==1] = 1.
                 RGB[mask==1,1] = 0.
@@ -130,11 +142,11 @@ if __name__ == '__main__':
                 mask = mask[:,:,:,args.fourthDimension]
 
             if args.plane=='x':
-                mask=ndimage.rotate(np.transpose(mask[args.slice,padding[2]:mask.shape[1]-padding[3],padding[4]:mask.shape[2]-padding[5]]),90)
+                mask=ndimage.rotate(np.transpose(mask[args.slice,crop[0]+padding[2]:crop[2]-padding[3],crop[1]+padding[4]:crop[3]-padding[5]]),90)
             elif args.plane=='y':
-                mask=mask[padding[0]:mask.shape[0]-padding[1],args.slice,padding[4]:mask.shape[2]-padding[5]]
+                mask=mask[crop[0]+padding[0]:crop[2]-padding[1],args.slice,crop[1]+padding[4]:crop[3]-padding[5]]
             elif args.plane=='z':
-                mask=mask[padding[0]:mask.shape[0]-padding[1],padding[2]:mask.shape[1]-padding[3],args.slice]
+                mask=mask[crop[0]+padding[0]:crop[2]-padding[1],crop[1]+padding[2]:crop[3]-padding[3],args.slice]
 
             tmpmask[mask==1] = 1.
             RGB[mask==1,1] = 0.
@@ -142,7 +154,6 @@ if __name__ == '__main__':
             RGB[:,:,0]=tmpmask
 
         tmp = RGB
-
 
 
     fig=plt.figure(frameon=False)
@@ -157,13 +168,13 @@ if __name__ == '__main__':
         cmap='plasma' #Set1
 
     if args.contrast>0:
-        im=ax.imshow(ndimage.rotate(tmp, 90), cmap=cmap, aspect='auto', clim=(0.0, args.contrast))
+        im=ax.imshow(ndimage.rotate(tmp, angle = 90), cmap=cmap, aspect='auto', clim=(0.0, args.contrast))
     else:
-        im=ax.imshow(ndimage.rotate(tmp, 90), cmap=cmap, aspect='auto')
+        im=ax.imshow(ndimage.rotate(tmp, angle = 90), cmap=cmap, aspect='auto')
     if args.equal==2:
         forceAspect(ax,aspect=1)
 
-    if args.colorbar==1:
+    if args.colorbar!=0:
         cbar=fig.colorbar(im, extend='both')#, shrink=0.9)#, ax=ax)
-        cbar.ax.tick_params(labelsize=100)
+        cbar.ax.tick_params(labelsize=args.colorbar)
     plt.savefig(args.output+'_'+args.plane+str(args.slice)+'.'+args.format)
