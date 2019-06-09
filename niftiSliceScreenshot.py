@@ -32,6 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('-cb', '--colorbar', help='Active the colorbar with a positive integer different than 0', type=int, default=0, required = False)
     parser.add_argument('-cm', '--cmap', help='Color map of the screenshot (\'gray\' or \'color\)', type=str, default='gray', required = False)
     parser.add_argument('-seg', '--segmentation', help='Segmentation image', type=str, nargs='*', default='', required = False)
+    parser.add_argument('-segfd', '--segFourthDimension', help='Value of the 4th dimension, in case of 4D segmentation image', type=int, default=0, required = False)
     parser.add_argument('-cr', '--crop', help='Coordinates of the image in order to crop (e.g. x0, y0, x1, y1, or x0 x1 z0 z1)', type=int, nargs='*', default=[0,0,0,0], required = False)
 
 
@@ -114,7 +115,7 @@ if __name__ == '__main__':
             for i,seg in enumerate(args.segmentation):
                 mask = nibabel.load(seg).get_data()
                 if len(mask.shape)==4:
-                    mask = nibabel.load(seg).get_data()[:,:,:,args.fourthDimension]
+                    mask = nibabel.load(seg).get_data()[:,:,:,args.segFourthDimension]
 
                 if args.plane=='x':
                     mask=ndimage.rotate(np.transpose(mask[args.slice,crop[0]+padding[2]:crop[2]-padding[3],crop[1]+padding[4]:crop[3]-padding[5]]),90)
@@ -123,23 +124,23 @@ if __name__ == '__main__':
                 elif args.plane=='z':
                     mask=mask[crop[0]+padding[0]:crop[2]-padding[1],crop[1]+padding[2]:crop[3]-padding[3],args.slice]
 
-                tmpmask[mask==1] = 1.
-                RGB[mask==1,1] = 0.
-                RGB[mask==1,2] = 0.
+                tmpmask[mask>1e-4] = 1.
+                RGB[mask>1e-4,1] = 0.
+                RGB[mask>1e-4,2] = 0.
                 RGB[:,:,0]=tmpmask
 
         else:
             mask = nibabel.load(args.segmentation).get_data()
             tmp = tmp/np.max(tmp)
             tmpmask = tmp.copy()
-            tmpmask[mask==1] = 1.
+            tmpmask[mask>1e-4] = 1.
             RGB = np.zeros((tmp.shape[0],tmp.shape[1],3))
             RGB[:,:,1]=tmp
             RGB[:,:,2]=tmp
             tmpmask = tmp.copy()
 
             if len(mask.shape)==4:
-                mask = mask[:,:,:,args.fourthDimension]
+                mask = mask[:,:,:,args.segFourthDimension]
 
             if args.plane=='x':
                 mask=ndimage.rotate(np.transpose(mask[args.slice,crop[0]+padding[2]:crop[2]-padding[3],crop[1]+padding[4]:crop[3]-padding[5]]),90)
@@ -148,9 +149,9 @@ if __name__ == '__main__':
             elif args.plane=='z':
                 mask=mask[crop[0]+padding[0]:crop[2]-padding[1],crop[1]+padding[2]:crop[3]-padding[3],args.slice]
 
-            tmpmask[mask==1] = 1.
-            RGB[mask==1,1] = 0.
-            RGB[mask==1,2] = 0.
+            tmpmask[mask>1e-4] = 1.
+            RGB[mask>1e-4,1] = 0.
+            RGB[mask>1e-4,2] = 0.
             RGB[:,:,0]=tmpmask
 
         tmp = RGB
