@@ -14,7 +14,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='thresholdNifti')
 
     parser.add_argument('-i', '--input', help='Input image (required, accepted multiple times)', type=str, nargs='*', required = True)
-    parser.add_argument('-t', '--threshold', help='Threshold value (default Otsu method)', type=float, nargs='*', default=-1, required = False)
+    parser.add_argument('-t', '--threshold', help='Threshold value (default Otsu method)', type=float, nargs='*', default=[-1], required = False)
     parser.add_argument('-o', '--output', help='Prefix added to input name for output image (default \'_threshold\' + threshold_value)', type=str, default='_threshold', required = False)
 
 
