@@ -40,14 +40,24 @@ if __name__ == '__main__':
         print('Input image file not found.')
         sys.exit()
 
-    if len(args.thresholds)>1:
-        if len(args.thresholds)!=len(args.input):
+    if len(args.threshold)>1:
+        if len(args.threshold)!=len(input):
             print('Number of thresholds does not correspond to the number of inputs')
             sys.exit()
         else:
-            thresholds = args.thresholds
+            thresholds=list()
+            for i,th in enumerate(args.threshold):
+                if th<0:
+                    thresholds.append(filters.threshold_otsu(input[i]))
+                else:
+                    thresholds.append(th)
     else:
-        thresholds = args.thresholds[0]*np.ones(len(args.input))
+        if args.threshol[0]<0:
+            thresholds = args.threshold[0]*filters.threshold_otsu(input[0])
+        else:
+            thresholds = args.threshold[0]*np.ones(len(input))
+
+
 
     for th in thresholds:
         if th<0:
