@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# -*- coding: utf-8 -*-
 import sys
 import argparse
 import numpy as np
@@ -29,24 +28,34 @@ if __name__ == '__main__':
 
 
     try:
-        print 'Input: \t'+args.input[0]
+        print('Input: \t'+args.input[0])
         if len(args.input)>1:
             for i in args.input[1:]:
-                print '\t'+i
+                print('\t'+i)
         input=list()
         inputImage=nibabel.load(args.input[0])
         for i in args.input:
             input.append(nibabel.load(i).get_data())
     except:
-        print 'Input image file not found.'
+        print('Input image file not found.')
         sys.exit()
 
-    if args.threshold<0:
-        thresholds=list()
-        for im in input:
-            thresholds.append(filters.threshold_otsu(im))
+    if len(args.thresholds)>1:
+        if len(args.thresholds)!=len(args.input):
+            print('Number of thresholds does not correspond to the number of inputs')
+            sys.exit()
+        else:
+            thresholds = args.thresholds
     else:
-        thresholds=args.threshold*np.ones(len(args.input))
+        thresholds = args.thresholds[0]*np.ones(len(args.input))
+
+    for th in thresholds:
+        if th<0:
+            thresholds=list()
+            for im in input:
+                thresholds.append(filters.threshold_otsu(im))
+        else:
+            thresholds.append(th)
 
 
     for i,im in enumerate(input):
@@ -58,6 +67,6 @@ if __name__ == '__main__':
         elif splitInput[-2]=='nii':
             inputName='.'.join(splitInput[:-2])
         else:
-            print 'Input file must be a nifti image'
+            print('Input file must be a nifti image')
             sys.exit()
         nibabel.save(nibabel.Nifti1Image(im,inputImage.affine),inputName+args.output+'0'+str(int(round(thresholds[i]*1000)))+'.nii.gz')
