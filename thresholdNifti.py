@@ -52,8 +52,8 @@ if __name__ == '__main__':
                 else:
                     thresholds.append(th)
     else:
-        if args.threshol[0]<0:
-            thresholds = args.threshold[0]*filters.threshold_otsu(input[0])
+        if args.threshold[0]<0:
+            thresholds = filters.threshold_otsu(input[0])*np.ones(len(input))
         else:
             thresholds = args.threshold[0]*np.ones(len(input))
 
