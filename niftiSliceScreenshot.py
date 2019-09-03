@@ -26,12 +26,14 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--format', help='Format image', type=str, default='png', required = False)
     parser.add_argument('-e', '--equal', help='Equal width and height', type=int, default=0, required = False)
     parser.add_argument('-n', '--normalise', help='Normalise the intensity levels', type=int, default=0, required = False)
-    parser.add_argument('-c', '--contrast', help='Maximum intensity value for enhancing contrast', type=int, default=0, required = False)
+    parser.add_argument('-c', '--contrast', help='Maximum intensity value for enhancing contrast', type=float, default=0, required = False)
     parser.add_argument('-fd', '--fourthDimension', help='Value of the 4th dimension, in case of 4D input image', type=int, default=0, required = False)
     parser.add_argument('-p', '--padding', help='Padding to avoid in the image', type=int, nargs='*' ,default=0, required = False)
     parser.add_argument('-cb', '--colorbar', help='Active the colorbar with a positive integer different than 0', type=int, default=0, required = False)
     parser.add_argument('-cm', '--cmap', help='Color map of the screenshot (\'gray\' or \'color\)', type=str, default='gray', required = False)
     parser.add_argument('-seg', '--segmentation', help='Segmentation image', type=str, nargs='*', default='', required = False)
+    parser.add_argument('-segcol', '--segmentationcolor', help='RGB color array of the segmentation image (given an array of length 3 and maximum 1: red, green and blue)', type=float, nargs='*', default=[1,0,0], required = False)
+    parser.add_argument('-segtr', '--segmentationtransparent', help='Active the transparent overlap segmentation image (0: no, 1: yes)', type=int, default=0, required = False)
     parser.add_argument('-segfd', '--segFourthDimension', help='Value of the 4th dimension, in case of 4D segmentation image', type=int, default=0, required = False)
     parser.add_argument('-cr', '--crop', help='Coordinates of the image in order to crop (e.g. x0, y0, x1, y1, or x0 x1 z0 z1)', type=int, nargs='*', default=[0,0,0,0], required = False)
 
@@ -53,7 +55,7 @@ if __name__ == '__main__':
     elif len(args.crop)==4:
         crop = args.crop
     else:
-        print 'Crop coordinates must be sized 4 (2D) or 6 (3D)'
+        print('Crop coordinates must be sized 4 (2D) or 6 (3D)')
         sys.exit()
 
     tmp=inputImage.get_data()
@@ -67,7 +69,7 @@ if __name__ == '__main__':
         padding = args.padding
 
     if len(padding)!=2*len(inputImage.get_data().shape):
-        print 'Length of padding array must be equal to the input dimension x2'
+        print('Length of padding array must be equal to the input dimension x2')
         sys.exit()
 
     if (len(tmp.shape)==2):
@@ -105,12 +107,21 @@ if __name__ == '__main__':
 
 
     if args.segmentation!='':
+        if args.segmentationtransparent not in [0,1]:
+            print('Transparency option for the segmentation overlap must be 0 or 1.')
+            sys.exit()
+        if len(args.segmentationcolor)!=3:
+            print('Length of the RGB color array for segmentation overlap must be 3.')
+            sys.exit()
+        #Ensure that RGB color array contains only positive numbers#
+        segmentationcolor=[abs(segcolor) for segcolor in args.segmentationcolor]
+
         if isinstance(args.segmentation, list):
             tmp = tmp/np.max(tmp)
             RGB = np.zeros((tmp.shape[0],tmp.shape[1],3))
+            RGB[:,:,0]=tmp
             RGB[:,:,1]=tmp
             RGB[:,:,2]=tmp
-            tmpmask = tmp.copy()
 
             for i,seg in enumerate(args.segmentation):
                 mask = nibabel.load(seg).get_data()
@@ -124,20 +135,24 @@ if __name__ == '__main__':
                 elif args.plane=='z':
                     mask=mask[crop[0]+padding[0]:crop[2]-padding[1],crop[1]+padding[2]:crop[3]-padding[3],args.slice]
 
-                tmpmask[mask>1e-4] = 1.
-                RGB[mask>1e-4,1] = 0.
-                RGB[mask>1e-4,2] = 0.
-                RGB[:,:,0]=tmpmask
+                #Fill color#
+                maxsegcolor = np.max(segmentationcolor)
+                RGB[mask>1e-6,0] *= segmentationcolor[0]
+                RGB[mask>1e-6,1] *= segmentationcolor[1]
+                RGB[mask>1e-6,2] *= segmentationcolor[2]
+                #No transparency#
+                if args.segmentationtransparent==0:
+                    RGB[mask>1e-6,0] = segmentationcolor[0]
+                    RGB[mask>1e-6,1] = segmentationcolor[1]
+                    RGB[mask>1e-6,2] = segmentationcolor[2]
 
         else:
             mask = nibabel.load(args.segmentation).get_data()
             tmp = tmp/np.max(tmp)
-            tmpmask = tmp.copy()
-            tmpmask[mask>1e-4] = 1.
             RGB = np.zeros((tmp.shape[0],tmp.shape[1],3))
+            RGB[:,:,0]=tmp
             RGB[:,:,1]=tmp
             RGB[:,:,2]=tmp
-            tmpmask = tmp.copy()
 
             if len(mask.shape)==4:
                 mask = mask[:,:,:,args.segFourthDimension]
@@ -149,10 +164,17 @@ if __name__ == '__main__':
             elif args.plane=='z':
                 mask=mask[crop[0]+padding[0]:crop[2]-padding[1],crop[1]+padding[2]:crop[3]-padding[3],args.slice]
 
-            tmpmask[mask>1e-4] = 1.
-            RGB[mask>1e-4,1] = 0.
-            RGB[mask>1e-4,2] = 0.
-            RGB[:,:,0]=tmpmask
+            #Fill color#
+            maxsegcolor = np.max(segmentationcolor)
+            RGB[mask>1e-6,0] *= segmentationcolor[0]
+            RGB[mask>1e-6,1] *= segmentationcolor[1]
+            RGB[mask>1e-6,2] *= segmentationcolor[2]
+            #No transparency#
+            if args.segmentationtransparent==0:
+                RGB[mask>1e-6,0] = segmentationcolor[0]
+                RGB[mask>1e-6,1] = segmentationcolor[1]
+                RGB[mask>1e-6,2] = segmentationcolor[2]
+
 
         tmp = RGB
 
