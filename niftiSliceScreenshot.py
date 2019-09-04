@@ -55,7 +55,7 @@ if __name__ == '__main__':
     elif len(args.crop)==4:
         crop = args.crop
     else:
-        print('Crop coordinates must be sized 4 (2D) or 6 (3D)')
+        print('Crop coordinates must be sized 4.')
         sys.exit()
 
     tmp=inputImage.get_data()
