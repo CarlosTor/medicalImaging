@@ -19,22 +19,21 @@ if __name__ == '__main__':
     np.seterr(divide='ignore', invalid='ignore')
 
     try:
-        print 'input: '+args.input
+        print('input: '+args.input)
         input=nibabel.load(args.input).get_data()
     except:
-        print 'Input image file not found.'
+        print('Input image file not found.')
         sys.exit()
     try:
-        print 'reference: '+args.reference
+        print('reference: '+args.reference)
         reference=nibabel.load(args.reference).get_data()
     except:
-        print 'Ground truth image file not found.'
+        print('Ground truth image file not found.')
         sys.exit()
 
 
     ###--Compute PSNR--###
     MSE=np.mean((reference-input)**2)
-    PSNR=10*np.log10(np.max(reference)**2/MSE)
-    PSNR=10*np.log10(1.0/MSE)
+    PSNR=10*np.log10(np.max((reference))**2/MSE)
 
-print 'PSNR score: '+str(PSNR)+' dB'
+print('PSNR score: '+str(PSNR)+' dB')
