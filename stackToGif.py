@@ -33,7 +33,6 @@ if __name__ == '__main__':
             ipath = ipath+'/'
         filename = input[-1]
         f = filename.split('XX')
-        print f
 
         if len(f) <= 2:
             filename1 = f[0]

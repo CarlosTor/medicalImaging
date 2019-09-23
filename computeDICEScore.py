@@ -33,21 +33,21 @@ if __name__ == '__main__':
 
 
     try:
-        print 'input: '+args.input
+        print('input: '+args.input)
         input=nibabel.load(args.input).get_data()
     except:
-        print 'Input image file not found.'
+        print('Input image file not found.')
         sys.exit()
     try:
-        print 'reference: '+args.reference
+        print('reference: '+args.reference)
         reference=nibabel.load(args.reference).get_data()
     except:
-        print 'Ground truth image file not found.'
+        print('Ground truth image file not found.')
         sys.exit()
 
 
     if args.threshold==0:
-        print fuzzy_dice(args.reference,args.input)
+        print(fuzzy_dice(args.reference,args.input))
     else:
         inputFull=nibabel.load(args.input)
         input=inputFull.get_data()
@@ -59,4 +59,4 @@ if __name__ == '__main__':
             inputJoin='.'.join(inputSplit[:-2])
         inputPath=inputJoin+'_t'+str(args.threshold)+'.nii.gz'
         nibabel.save(nibabel.Nifti1Image(input,inputFull.affine),inputPath)
-        print fuzzy_dice(args.reference,inputPath)
+        print(fuzzy_dice(args.reference,inputPath))
